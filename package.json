@@ -1,0 +1,26 @@
+{
+  "name": "tiky",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": ""
+  },
+  "keywords": [],
+  "author": {
+    "name": "TanKingKhun",
+    "email": "chenjk110@qq.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:chenjk110/tiky.git"
+  },
+  "dependencies": {
+    "create-license": "^1.0.2",
+    "inquirer": "^7.1.0",
+    "inquirer-autocomplete-prompt": "^1.0.2",
+    "inquirer-prompt-suggest": "^0.1.0",
+    "inquirer-search-checkbox": "^1.0.0"
+  }
+}
