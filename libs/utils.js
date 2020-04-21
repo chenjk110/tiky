@@ -1,3 +1,4 @@
+// @ts-check
 const { promisify } = require('util')
 const { exec } = require('child_process')
 const { writeFile, mkdir } = require('fs')
@@ -7,7 +8,11 @@ const execAsync = promisify(exec)
 const writeFileAsync = promisify(writeFile)
 const mkdirAsync = promisify(mkdir)
 
-const checkEmail = (email) => /^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(email)
+/**
+ * validate email address
+ * @param {string} email 
+ */
+const validateEmail = (email) => /^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(email)
 
 const getPWD = async () => (await promisify(exec)('pwd')).stdout.replace('\n', '')
 
@@ -19,11 +24,9 @@ const getPWD = async () => (await promisify(exec)('pwd')).stdout.replace('\n', '
  */
 const createWriteFile = async (filename, content, cwd) => {
     const targetPath = resolve(cwd, filename)
-
     if (typeof content !== 'string') {
         content = JSON.stringify(content, null, 4)
     }
-
     try {
         await writeFileAsync(targetPath, content, { encoding: 'utf8', flag: 'w' })
     } catch (err) {
@@ -46,12 +49,28 @@ const createDir = async (dir = '') => {
     return true
 }
 
+/**
+ * get current user of system
+ */
+const getCurrUserName = async () => {
+    const getUser = async (var_name) => (
+        await execAsync(`echo ${var_name}`)
+    ).stdout.replace('\n', '')
+
+    let username = await getUser('$USER')
+    if (!username) {
+        username = await getUser('$USERNAME')
+    }
+    return username || ''
+}
+
 module.exports = {
-    checkEmail,
+    validateEmail,
     execAsync,
     writeFileAsync,
     mkdirAsync,
     getPWD,
     createWriteFile,
-    createDir
+    createDir,
+    getCurrUserName,
 }

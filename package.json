@@ -20,7 +20,6 @@
     "create-license": "^1.0.2",
     "inquirer": "^7.1.0",
     "inquirer-autocomplete-prompt": "^1.0.2",
-    "inquirer-prompt-suggest": "^0.1.0",
-    "inquirer-search-checkbox": "^1.0.0"
+    "inquirer-prompt-suggest": "^0.1.0"
   }
 }

@@ -1,3 +1,4 @@
+// @ts-check
 const { createWriteFile, execAsync } = require('../utils')
 
 /**
@@ -11,7 +12,7 @@ const getGitUserInfo = async () => {
             email: (await execAsync('git config user.email')).stdout.replace('\n', '')
         }
     } catch (err) {
-        // console.log(err)
+        // console.error(err)
     }
     return Object.freeze(info)
 }
@@ -28,7 +29,7 @@ const setGitUserInfo = async (name = '', email = '') => {
             execAsync(`git config --local user.email ${email}`)
         ])
     } catch (err) {
-        // console.log(err)
+        // console.error(err)
         return false
     }
     return true
@@ -42,7 +43,7 @@ const checkGit = async () => {
     try {
         await execAsync('git --version')
     } catch (err) {
-        // console.log(err)
+        // console.error(err)
         return false
     }
     return true
@@ -56,7 +57,7 @@ const initGit = async (cwd = '.') => {
     try {
         await execAsync(`git init .`, { cwd })
     } catch (err) {
-        console.log(err.message)
+        console.error(err.message)
         return false
     }
     return true
@@ -71,7 +72,7 @@ const initGitCommit = async (cwd = '.') => {
         await execAsync(`git add .`, { cwd })
         await execAsync(`git commit -m "init."`, { cwd })
     } catch (err) {
-        console.log(err.message)
+        console.error(err.message)
         return false
     }
     return true
@@ -86,18 +87,18 @@ const craeteGitIgnoreFile = async (lines = [], cwd = '.') => {
     const content = [
         '.DS_Store',
         '.vscode',
-        'node_modules'
+        'node_modules',
+        'dist'
     ].concat(lines).join('\n')
 
     try {
         await createWriteFile('.gitignore', content, cwd)
     } catch (err) {
-        console.log(err.message)
+        console.error(err.message)
         return false
     }
     return true
 }
-
 
 module.exports = {
     getGitUserInfo,

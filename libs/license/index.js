@@ -3,24 +3,31 @@ const createLicense = require('create-license')
 const LISCENES = createLicense.licenses.map(name => name.toUpperCase())
 const licenses = createLicense.licenses.concat()
 
-const choices = licenses.map(name => {
+const choicesLicenses = licenses.map(name => {
     const opt = { name: name.toUpperCase(), value: name }
     return opt
 })
 
-/** @type {import('inquirer').ListQuestionOptions} */
-const questionLicense = {
-    type: 'list',
-    name: 'liscene',
-    message: 'License',
-    default: 'mit',
-    pageSize: 10,
-    choices: choices
+/**
+ * create License file
+ * @param {string} where target path to create file
+ * @param {string} type license type
+ * @param {{year?:string,author?:string:project?:string}} opts custom content
+ */
+const createLicenseFile = (where, type, opts) => {
+    try {
+        createLicense(where, type, opts)
+    } catch (err) {
+        console.log(err.message)
+        return false
+    }
+    return true
 }
+
 
 module.exports = {
     LISCENES,
     licenses,
-    questionLicense,
-    createLicense
+    choicesLicenses,
+    createLicenseFile,
 }
