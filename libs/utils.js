@@ -30,7 +30,7 @@ const createWriteFile = async (filename, content, cwd) => {
     try {
         await writeFileAsync(targetPath, content, { encoding: 'utf8', flag: 'w' })
     } catch (err) {
-        console.log(err.message)
+        console.log(err)
         return false
     }
     return true

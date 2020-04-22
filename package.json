@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "bin": "tiky",
   "scripts": {
-    "start": ""
+    "start": "The scaffold of creating project of TypeScript and JavaScript library."
   },
-  "keywords": [],
+  "keywords": [
+    "typescript",
+    "scaffold",
+    "tiky"
+  ],
   "author": {
     "name": "TanKingKhun",
     "email": "chenjk110@qq.com"
@@ -17,9 +22,14 @@
     "url": "git@github.com:chenjk110/tiky.git"
   },
   "dependencies": {
+    "chalk": "^4.0.0",
+    "commander": "^5.0.0",
     "create-license": "^1.0.2",
     "inquirer": "^7.1.0",
     "inquirer-autocomplete-prompt": "^1.0.2",
     "inquirer-prompt-suggest": "^0.1.0"
+  },
+  "devDependencies": {
+    "ora": "^4.0.4"
   }
 }

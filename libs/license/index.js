@@ -14,7 +14,7 @@ const choicesLicenses = licenses.map(name => {
  * @param {string} type license type
  * @param {{year?:string,author?:string:project?:string}} opts custom content
  */
-const createLicenseFile = (where, type, opts) => {
+const createLicenseFile = async (where, type, opts) => {
     try {
         createLicense(where, type, opts)
     } catch (err) {

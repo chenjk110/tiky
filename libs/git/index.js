@@ -80,10 +80,10 @@ const initGitCommit = async (cwd = '.') => {
 
 /**
  * create .gitignore file
- * @param {string[]} lines lines of content
  * @param {string} cwd cwd
+ * @param {string[]} lines lines of content
  */
-const craeteGitIgnoreFile = async (lines = [], cwd = '.') => {
+const craeteGitIgnoreFile = async (cwd = '.', lines = []) => {
     const content = [
         '.DS_Store',
         '.vscode',
@@ -97,6 +97,7 @@ const craeteGitIgnoreFile = async (lines = [], cwd = '.') => {
         console.error(err.message)
         return false
     }
+
     return true
 }
 

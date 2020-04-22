@@ -1,6 +1,10 @@
+// @ts-check
 const { tsConfigChoices } = require('./consts')
 const { createWriteFile } = require('../utils')
+const { readFileSync } = require('fs')
 const inquirer = require('inquirer')
+
+const tsConfigTpl = readFileSync(__dirname + '/tsconfig-template').toString()
 
 const tsConfigChoicesList = tsConfigChoices.reduce((res, opt) => {
     return res.concat(
@@ -11,17 +15,15 @@ const tsConfigChoicesList = tsConfigChoices.reduce((res, opt) => {
 
 /**
  * create `tsconfig.json` file
- * @param {string[]} options the list of tsconfig.json's compilerOption property
  * @param {string} dir project root dir
+ * @param {string[]} options the list of tsconfig.json's compilerOption property
  */
-const createTSConfigFile = async (options, dir) => {
-    const compilerOptions = {}
+const createTSConfigFile = async (dir, options) => {
+    const config = JSON.parse(tsConfigTpl)
+
+    const compilerOptions = config.compilerOptions || (config.compilerOptions = {})
 
     options.forEach(name => compilerOptions[name] = true)
-
-    const config = {
-        compilerOptions
-    }
 
     try {
         await createWriteFile('tsconfig.json', JSON.stringify(config, null, 4), dir)

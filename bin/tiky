@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+const { parse } = require('path')
+const { execSync } = require('child_process')
+const program = require('commander')
+const chalk = require('chalk')
+const pkg = require('../package.json')
+const { run } = require('../libs/index')
+
+const config = {}
+
+const printHeaderInfo = (cwd, name) => {
+    console.log()
+    console.log(chalk.green.bold(`* TIKY: Creating Project`))
+    console.log(chalk.green(`* project: ${chalk.greenBright.bold(name)}`))
+    console.log(chalk.green(`* dictionary: ${chalk.greenBright.underline.bold(cwd)}`))
+    console.log(chalk.green(`* date: ${chalk.greenBright.bold(new Date().toLocaleString())}`))
+    console.log()
+}
+
+// version
+program.version(pkg.version)
+
+// options
+
+// arguments
+program
+    .arguments('[project]')
+    .action((project = '') => {
+        const cwd = execSync('pwd').toString().replace('\n', '')
+        config.projectDir = cwd
+        config.projectName = parse(project).name
+        printHeaderInfo(cwd, config.projectName)
+    })
+
+program.parse(process.argv)
+
+run(config)
+
