@@ -1,6 +1,9 @@
 # Tiky CLI
 The scaffold of creating project of TypeScript and JavaScript library.
 
+https://img.shields.io/npm/v/tiky
+https://img.shields.io/npm/l/tiky
+
 ## Install
 
 ```bash
