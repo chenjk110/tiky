@@ -91,6 +91,22 @@ const checkExist = async (dir, name) => {
     return true
 }
 
+/**
+ * get url's ping marks
+ * @param {string} url 
+ */
+const getPingMarks = async (url) => {
+    const res = (await execAsync(`ping -t 2 -q ${url}`)).stdout
+    const matched = /(?<min>\d+\.\d+)\/(?<avg>\d+\.\d+)\/(?<max>\d+\.\d+)/.exec(res)
+    const marks = { url, min: Infinity, max: Infinity, avg: Infinity }
+    if (matched && matched.groups) {
+        Object.keys(matched.groups).forEach(key => {
+            marks[key] = +matched.groups[key]
+        })
+    }
+    return marks
+}
+
 module.exports = {
     validateEmail,
     execAsync,
@@ -103,4 +119,5 @@ module.exports = {
     getCurrUserName,
     createDirs,
     checkExist,
+    getPingMarks
 }

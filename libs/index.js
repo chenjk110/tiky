@@ -4,7 +4,7 @@ const chalk = require('chalk')
 const ora = require('ora')
 const { resolve } = require('path')
 const { createNpmPkgFile, installDeps } = require('./npm')
-const { validateEmail, createDirs, createWriteFile, execAsync } = require('./utils')
+const { validateEmail, createDirs, createWriteFile, execAsync, getPingMarks } = require('./utils')
 const { getGitUserInfo, checkGit, initGit, initGitCommit, craeteGitIgnoreFile } = require('./git')
 const { createLicenseFile, choicesLicenses } = require('./license')
 const { createTSConfigFile, tsConfigChoicesList } = require('./ts')
@@ -90,11 +90,12 @@ const creatingOperation = async (config) => {
     const targetDeps = []
 
     // 'start' script in package.json
+    const ext = isTs ? 'ts' : 'js'
     const pkgScriptsStart = `NODE_ENV=development nodemon -e ${
-        isTs ? 'ts' : 'js'
-        } -w ./src -x 'node ${
-        isTs ? '--require ts-node/register' : ''
-        } ./src/index.${isTs ? 'ts' : 'js'}'`
+        ext
+        } -w ./src -x 'node${
+        isTs ? ' --require ts-node/register' : ''
+        } ./src/index.${ext}'`
 
     // 'build' script in package.json
     let pkgScriptsBuild = `NODE_ENV=production rm -rf dist `
@@ -110,16 +111,21 @@ const creatingOperation = async (config) => {
         // update `build` script when using `tsc` compiler
         if (isTSC) {
             pkgScriptsBuild += config[MODULE_TYPE_TARGET].map(name => {
-                return `&& tsc -t ${name} --outDir dist/${name}`
-            })
+                return `tsc -t ${name.toLowerCase()} --outDir dist/${name}`
+            }).join(' && ')
         }
     }
 
     if (isWebpack) {
+
         targetDeps.push(
             'webpack',
             'webpack-cli',
+            'babel-loader',
+            '@babel/core',
+            '@babel/preset-env'
         )
+
         if (isTs) {
             targetDeps.push('ts-loader')
         }
@@ -153,21 +159,64 @@ const creatingOperation = async (config) => {
         license: license,
     }
 
+    if (isNoneBuildTool) { (delete pkg.scripts.build) }
+
     await createNpmPkgFile(projectRoot, pkg)
     console.log(chalk.cyan(`Creating files succeed.`))
 
     /**
      * installing npm deps
      */
+    // select installing tool and switch registry
+    const pkgToolChoices = []
+    const hasYarn = !(await execAsync('yarn --version')).stderr
+    const hasNpm = !(await execAsync('npm --version')).stderr
+    hasYarn && pkgToolChoices.push({ name: 'yarn', value: 'yarn add', checked: true })
+    hasNpm && pkgToolChoices.push({ name: 'npm', value: 'npm i', checked: !hasYarn })
+
+    const checkPingSpinner = ora().start('checking registry delay...')
+
+    const pingMarks = await Promise.all([
+        getPingMarks('registry.npmjs.org'),
+        getPingMarks('registry.npm.taobao.org'),
+    ])
+
+    checkPingSpinner.succeed()
+
+    pingMarks.sort((a, b) => a.avg - b.avg)
+
+    const registryChoices = pingMarks.map((item, idx) => {
+        return {
+            name: `${item.url} [${chalk.greenBright(item.avg + 'ms')}]`,
+            value: item.url,
+            checked: idx === 0,
+        }
+    })
+
+    const { registryUrl } = await inquirer.prompt({
+        type: 'list',
+        name: 'registryUrl',
+        message: 'select registry when installing',
+        default: registryChoices.find(item => item.checked).value,
+        choices: registryChoices
+    })
+
+    const { cli } = await inquirer.prompt({
+        type: 'list',
+        name: 'cli',
+        default: 'yarn add',
+        message: 'select tool when installing',
+        choices: pkgToolChoices
+    })
+
     const deps = commonDeps.concat(targetDeps)
 
     // begin installing spinner fx
     const spinner = ora().start('Installing...')
-
     const beginTimeStamp = Date.now() // begin timestamp
 
     // executing installation
-    const installTask = installDeps(deps, projectRoot)
+    const installTask = installDeps(deps, cli, projectRoot, registryUrl)
 
     await installTask.then(() => {
         // cost time
@@ -275,22 +324,22 @@ async function run(options) {
         ]
     }
 
-    /** @type {import('inquirer').CheckboxQuestionOptions} */
-    const questionTargetWebpack = {
-        type: 'list',
-        name: CONFIG_KEYS.SCRIPT_TYPE_TARGET,
-        message: 'select target version of scripts',
-        choices: [
-            { name: 'ES5', value: 5, checked: true },
-            { name: 'ES6', value: 6 },
-            { name: 'ES2015', value: 2015 },
-            { name: 'ES2016', value: 2016 },
-            { name: 'ES2017', value: 2017 },
-            { name: 'ES2018', value: 2018 },
-            { name: 'ES2019', value: 2019 },
-            { name: 'ES2020', value: 2020 },
-        ]
-    }
+    // /** @type {import('inquirer').CheckboxQuestionOptions} */
+    // const questionTargetWebpack = {
+    //     type: 'list',
+    //     name: CONFIG_KEYS.SCRIPT_TYPE_TARGET,
+    //     message: 'select target version of scripts',
+    //     choices: [
+    //         { name: 'ES5', value: 5, checked: true },
+    //         { name: 'ES6', value: 6 },
+    //         { name: 'ES2015', value: 2015 },
+    //         { name: 'ES2016', value: 2016 },
+    //         { name: 'ES2017', value: 2017 },
+    //         { name: 'ES2018', value: 2018 },
+    //         { name: 'ES2019', value: 2019 },
+    //         { name: 'ES2020', value: 2020 },
+    //     ]
+    // }
 
     /** @type {import('inquirer').CheckboxQuestionOptions} */
     const questionModuleTS = {
@@ -429,7 +478,7 @@ async function run(options) {
 
             if (CONFIGS[CONFIG_KEYS.BUILD_TOOL] === 'webpack') {
                 questionsNext.unshift(
-                    questionTargetWebpack,
+                    // questionTargetWebpack,
                     questionModuleWebpack,
                 )
             }

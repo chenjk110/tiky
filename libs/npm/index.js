@@ -16,10 +16,14 @@ const createNpmPkgFile = async (dir, options) => {
 /**
  * install development deps
  * @param {string[]} deps 
+ * @param {'npm i' | 'yarn add'} cli
  * @param {string} cwd
+ * @param {string} registry
  */
-const installDeps = async (deps, cwd) => {
-    await execAsync(`npm i ${deps.join(' ')} --save-dev`, { cwd, killSignal: 'SIGINT' })
+const installDeps = async (deps, cli, cwd, registry) => {
+    registry = registry ? `--registry https://${registry}` : ''
+    const devFlag = cli === 'yarn add' ? '--dev' : '--save-dev'
+    await execAsync(`${cli} ${deps.join(' ')} ${registry} ${devFlag}`, { cwd, killSignal: 'SIGINT' })
 }
 
 module.exports = {

@@ -1,0 +1,13 @@
+module.exports = {
+    mode: 'production',
+    entry: './src/index.{{EXT}}',
+    devtool: 'cheap-module-source-map',
+    output: {
+        filename: 'bundle.[hash].js',
+        path: '{{DIST}}/dist',
+        libraryTarget: '{{MODULE}}',
+    },
+    module: {
+        rules: {{RULES}}
+    }
+}
