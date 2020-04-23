@@ -1,6 +1,6 @@
 {
   "name": "tiky",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "The scaffold of creating project of TypeScript and JavaScript library.",
   "main": "./libs/index.js",
   "bin": {
