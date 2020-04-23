@@ -19,9 +19,7 @@ const createNpmPkgFile = async (dir, options) => {
  * @param {string} cwd
  */
 const installDeps = async (deps, cwd) => {
-    await execAsync(`npm i ${deps.join(' ')} --save-dev`, { cwd }).then(res => {
-        // process.stdout.write(res.stdout)
-    })
+    await execAsync(`npm i ${deps.join(' ')} --save-dev`, { cwd, killSignal: 'SIGINT' })
 }
 
 module.exports = {

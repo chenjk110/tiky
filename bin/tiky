@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-const { parse } = require('path')
+const { parse, resolve } = require('path')
 const { execSync } = require('child_process')
 const program = require('commander')
+const inquirer = require('inquirer')
 const chalk = require('chalk')
 const pkg = require('../package.json')
+const { checkExist } = require('../libs/utils')
 const { run } = require('../libs/index')
 
 const config = {}
@@ -34,5 +36,33 @@ program
 
 program.parse(process.argv)
 
-run(config)
+const executor = async () => {
+    const { projectDir, projectName } = config
+    const targetPath = resolve(projectDir, projectName)
+    // check project exist
+    const isExitProject = await checkExist(projectDir, projectName)
+    if (isExitProject) {
+        console.log(chalk.redBright(`WARN: "${targetPath}" has existed.`))
 
+        const { isOverwrite } = await inquirer.prompt({
+            type: 'confirm',
+            name: 'isOverwrite',
+            default: false,
+            message: `would you want to override?`
+        })
+
+        config.isOverwrite = isOverwrite
+
+        if (!isOverwrite) {
+            console.log(chalk.gray('creation is aborted.'))
+            return process.exit(0)
+        }
+    }
+
+    await run(config)
+}
+
+executor().catch(err => {
+    console.log(err)
+    process.exit(0)
+})

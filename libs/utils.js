@@ -1,12 +1,13 @@
 // @ts-check
 const { promisify } = require('util')
 const { exec } = require('child_process')
-const { writeFile, mkdir } = require('fs')
+const { writeFile, mkdir, stat } = require('fs')
 const { resolve } = require('path')
 
 const execAsync = promisify(exec)
 const writeFileAsync = promisify(writeFile)
 const mkdirAsync = promisify(mkdir)
+const statAsync = promisify(stat)
 
 /**
  * validate email address
@@ -64,13 +65,42 @@ const getCurrUserName = async () => {
     return username || ''
 }
 
+/**
+ * create dirs
+ * @param {string} prjRoot 
+ * @param {string[]} dirs 
+ */
+const createDirs = async (prjRoot, dirs) => {
+    for (let i = 0; i < dirs.length; i++) {
+        const dir = resolve(prjRoot, dirs[i])
+        await createDir(dir)
+    }
+}
+
+/**
+ * check project exist
+ * @param {string} dir root dir
+ * @param {string} name project name
+ */
+const checkExist = async (dir, name) => {
+    try {
+        await statAsync(resolve(dir, name))
+    } catch (err) {
+        return false
+    }
+    return true
+}
+
 module.exports = {
     validateEmail,
     execAsync,
     writeFileAsync,
     mkdirAsync,
+    statAsync,
     getPWD,
     createWriteFile,
     createDir,
     getCurrUserName,
+    createDirs,
+    checkExist,
 }

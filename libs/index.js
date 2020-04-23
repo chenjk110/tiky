@@ -4,7 +4,7 @@ const chalk = require('chalk')
 const ora = require('ora')
 const { resolve } = require('path')
 const { createNpmPkgFile, installDeps } = require('./npm')
-const { validateEmail, createDir, createWriteFile } = require('./utils')
+const { validateEmail, createDirs, createWriteFile, execAsync } = require('./utils')
 const { getGitUserInfo, checkGit, initGit, initGitCommit, craeteGitIgnoreFile } = require('./git')
 const { createLicenseFile, choicesLicenses } = require('./license')
 const { createTSConfigFile, tsConfigChoicesList } = require('./ts')
@@ -29,18 +29,7 @@ const CONFIG_KEYS = {
     VER: '__VER__',
 }
 
-/**
- * create dirs
- * @param {string} prjRoot 
- * @param {string[]} dirs 
- */
-const crateDirs = async (prjRoot, dirs) => {
-    for (let i = 0; i < dirs.length; i++) {
-        const dir = resolve(prjRoot, dirs[i])
-        await createDir(dir)
-        console.log(chalk.cyan(`create dir ${dir} succeed.`))
-    }
-}
+
 
 /**
  * finaly creating operation 
@@ -73,9 +62,10 @@ const creatingOperation = async (config) => {
     const isTs = config[SCRIPT_TYPE_SOURCE] === 'ts'
     const isTSC = config[BUILD_TOOL] === 'tsc'
     const isWebpack = config[BUILD_TOOL] === 'webpack'
+    const isNoneBuildTool = config[BUILD_TOOL] === 'none'
     // const isGulp = config[BUILD_TOOL] === 'gulp'
 
-    await crateDirs(projectRoot, [
+    await createDirs(projectRoot, [
         'src',
         'dist',
     ])
@@ -83,8 +73,6 @@ const creatingOperation = async (config) => {
     if (isTs) {
         const tsConfigs = config[TOGGLE_FLAG_TS_CONFIG]
         await createTSConfigFile(projectRoot, tsConfigs)
-        console.log(chalk.cyan(`create dir ${projectRoot + '/tsconfig.json'} succeed.`))
-
         await createWriteFile('src/index.ts', '', projectRoot)
     } else {
         await createWriteFile('src/index.js', '', projectRoot)
@@ -101,20 +89,25 @@ const creatingOperation = async (config) => {
     const commonDeps = ['nodemon']
     const targetDeps = []
 
-    const pkgScriptsStart = `nodemon -e ${
+    // 'start' script in package.json
+    const pkgScriptsStart = `NODE_ENV=development nodemon -e ${
         isTs ? 'ts' : 'js'
         } -w ./src -x 'node ${
         isTs ? '--reguire ts-node/register' : ''
         } ./src/index.${isTs ? 'ts' : 'js'}'`
 
+    // 'build' script in package.json
     let pkgScriptsBuild = `NODE_ENV=production rm -rf dist `
 
+    // TypeScript mode
     if (isTs) {
+        // push deps when using typescript
         targetDeps.push(
             'ts-node',
             'typescript',
             '@types/node',
         )
+        // update `build` script when using `tsc` compiler
         if (isTSC) {
             pkgScriptsBuild += config[MODULE_TYPE_TARGET].map(name => {
                 return `&& tsc -t ${name} --outDir dist/${name}`
@@ -125,6 +118,7 @@ const creatingOperation = async (config) => {
     if (isWebpack) {
         targetDeps.push(
             'webpack',
+            'webpack-cli',
         )
         if (isTs) {
             targetDeps.push('ts-loader')
@@ -140,6 +134,11 @@ const creatingOperation = async (config) => {
         )
     }
 
+
+    /**
+     * construct package.json content
+     * and write file
+     */
     const pkg = {
         name: projectName,
         version: version,
@@ -155,15 +154,26 @@ const creatingOperation = async (config) => {
     }
 
     await createNpmPkgFile(projectRoot, pkg)
-    console.log(chalk.cyan(`create dir ${projectRoot + '/package.json'} succeed.`))
+    console.log(chalk.cyan(`Creating files succeed.`))
 
-
+    /**
+     * installing npm deps
+     */
     const deps = commonDeps.concat(targetDeps)
-    const spinner = ora().start('Installing...');
+
+    // begin installing spinner fx
+    const spinner = ora().start('Installing...')
+
+    const beginTimeStamp = Date.now() // begin timestamp
+
+    // executing installation
     const installTask = installDeps(deps, projectRoot)
 
     await installTask.then(() => {
-        spinner.succeed(`Installing Completed!`)
+        // cost time
+        const costTime = ((Date.now() - beginTimeStamp) / 1000).toFixed(2)
+        // stop spinner fx and print result info.
+        spinner.succeed(`Installing Completed! (total: ${costTime}s)`)
     }).catch(err => {
         spinner.fail(err.message)
         throw err
@@ -172,20 +182,34 @@ const creatingOperation = async (config) => {
     if (config[INIT_GIT]) {
         await initGit(projectRoot)
         await initGitCommit(projectRoot)
-        console.log(chalk.cyan(`init git succeed.`))
+        console.log(chalk.cyan(`Init local git repository succeed.`))
     }
 
-    console.log(chalk.green(`Creating Project '${projectName}' Succeed!`))
+    const resultInfo = `* Creating Project '${projectName}' Succeed! *`
+    const resultInfoBorder = `-`.repeat(resultInfo.length)
+    console.log(chalk.green(resultInfoBorder))
+    console.log(chalk.green(resultInfo))
+    console.log(chalk.green(resultInfoBorder))
+
+    console.log()
+
+    console.log(chalk.gray(`Forwards:`))
     console.log(chalk.gray(`cd ${projectName}`))
     console.log(chalk.gray(`npm start`))
-    console.log(chalk.gray(`npm run build`))
+
+    if (!isNoneBuildTool) {
+        console.log(chalk.gray(`npm run build`))
+    }
 }
+
 
 /**
  * Main Async Runner
  */
 async function run(options) {
-    const { projectDir, projectName = '' } = options
+    const { projectDir, projectName = '', isOverwrite = false } = options
+
+    const targetPath = resolve(projectDir, projectName)
 
     /** @type {Record<keyof CONFIG_KEYS | string, any>} */
     const CONFIGS = {
@@ -419,8 +443,11 @@ async function run(options) {
             }
             return res
         })
-        .then(res => {
+        .then(async (res) => {
             Object.assign(CONFIGS, res)
+            if (isOverwrite) {
+                await execAsync(`rm -rf ${targetPath}`)
+            }
             return creatingOperation(CONFIGS)
         })
         .catch((err) => {

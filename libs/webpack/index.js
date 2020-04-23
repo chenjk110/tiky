@@ -42,7 +42,7 @@ const createWebpackConfigFile = async (type, ecmaVersion, libraryTarget, cwd) =>
     opt.output.ecmaVersion = ecmaVersion
     opt.output.libraryTarget = libraryTarget
     opt.output.path = resolve(cwd, 'dist')
-    await createWriteFile('webpack.config.js', 'module.exports=' + JSON.stringify(opt, null, 4), cwd)
+    await createWriteFile('webpack.config.js', 'module.exports = ' + JSON.stringify(opt, null, 4), cwd)
 }
 
 module.exports = {
