@@ -93,7 +93,7 @@ const creatingOperation = async (config) => {
     const pkgScriptsStart = `NODE_ENV=development nodemon -e ${
         isTs ? 'ts' : 'js'
         } -w ./src -x 'node ${
-        isTs ? '--reguire ts-node/register' : ''
+        isTs ? '--require ts-node/register' : ''
         } ./src/index.${isTs ? 'ts' : 'js'}'`
 
     // 'build' script in package.json
