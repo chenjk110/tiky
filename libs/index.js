@@ -91,10 +91,8 @@ const creatingOperation = async (config) => {
 
     // 'start' script in package.json
     const ext = isTs ? 'ts' : 'js'
-    const pkgScriptsStart = `NODE_ENV=development nodemon -e ${
-        ext
-        } -w ./src -x 'node${
-        isTs ? ' --require ts-node/register' : ''
+    const pkgScriptsStart = `NODE_ENV=development nodemon -e ${ext
+        } -w ./src -x 'node${isTs ? ' --require ts-node/register' : ''
         } ./src/index.${ext}'`
 
     // 'build' script in package.json
@@ -169,10 +167,12 @@ const creatingOperation = async (config) => {
      */
     // select installing tool and switch registry
     const pkgToolChoices = []
-    const hasYarn = !(await execAsync('yarn --version')).stderr
-    const hasNpm = !(await execAsync('npm --version')).stderr
+    const hasYarn = await execAsync('yarn --version').catch(_ => false)
+    const hasNpm = await execAsync('npm --version').catch(_ => false)
     hasYarn && pkgToolChoices.push({ name: 'yarn', value: 'yarn add', checked: true })
     hasNpm && pkgToolChoices.push({ name: 'npm', value: 'npm i', checked: !hasYarn })
+
+    const shouldSelectPkgMgr = hasYarn && hasNpm
 
     const checkPingSpinner = ora().start('checking registry delay...')
 
@@ -201,13 +201,19 @@ const creatingOperation = async (config) => {
         choices: registryChoices
     })
 
-    const { cli } = await inquirer.prompt({
-        type: 'list',
-        name: 'cli',
-        default: 'yarn add',
-        message: 'select tool when installing',
-        choices: pkgToolChoices
-    })
+    let cli = 'yarn add'
+    if (shouldSelectPkgMgr) {
+        const { cli: selectedCLI } = await inquirer.prompt({
+            type: 'list',
+            name: 'cli',
+            default: cli,
+            message: 'select tool when installing',
+            choices: pkgToolChoices
+        })
+        cli = selectedCLI
+    } else {
+        cli = pkgToolChoices[0].value
+    }
 
     const deps = commonDeps.concat(targetDeps)
 
@@ -416,6 +422,7 @@ async function run(options) {
         message: 'email',
         default: GIT_USER_INFO.email,
         validate: (input) => {
+            if (!input) return true
             return validateEmail(input) || 'please input valid email address.'
         }
     }
@@ -439,7 +446,7 @@ async function run(options) {
     /**
      * Main Inquirer
      */
-    inquirer
+    await inquirer
         .prompt([
             questionProjectName,
             questionVer,

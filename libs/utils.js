@@ -100,9 +100,13 @@ const getPingMarks = async (url) => {
     const matched = /(?<min>\d+\.\d+)\/(?<avg>\d+\.\d+)\/(?<max>\d+\.\d+)/.exec(res)
     const marks = { url, min: Infinity, max: Infinity, avg: Infinity }
     if (matched && matched.groups) {
-        Object.keys(matched.groups).forEach(key => {
-            marks[key] = +matched.groups[key]
-        })
+        const matchedKeys = Object.keys(matched.groups)
+        const updateValue = (key) => {
+            const value = Number(matched.groups[key])
+            !isNaN(value) && (marks[key] = value)
+
+        }
+        matchedKeys.forEach(updateValue)
     }
     return marks
 }
